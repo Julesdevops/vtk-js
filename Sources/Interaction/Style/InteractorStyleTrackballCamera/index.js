@@ -131,6 +131,22 @@ function vtkInteractorStyleTrackballCamera(publicAPI, model) {
     }
   };
 
+  publicAPI.handleStartXrSelect = (callData) => {
+    const axes = callData.axes;
+    console.log('trackballcamera');
+    console.log(axes);
+    model.previousPosition = { x: axes[0], y: axes[1] };
+    publicAPI.startRotate();
+  };
+
+  publicAPI.handleEndXrSelect = (callData) => {
+    const axes = callData.axes;
+    console.log('trackballcamera');
+    console.log(axes);
+    model.previousPosition = axes;
+    publicAPI.endRotate();
+  };
+
   //--------------------------------------------------------------------------
   publicAPI.handleLeftButtonRelease = () => {
     switch (model.state) {

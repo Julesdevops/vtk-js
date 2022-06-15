@@ -1293,6 +1293,7 @@ export function extend(publicAPI, model, initialValues = {}) {
     'vrDisplay',
     'useBackgroundImage',
     'xrSupported',
+    'xrReferenceSpace',
   ]);
 
   macro.setGet(publicAPI, model, [

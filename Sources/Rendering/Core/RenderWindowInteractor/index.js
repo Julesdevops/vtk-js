@@ -458,13 +458,25 @@ function vtkRenderWindowInteractor(publicAPI, model) {
   };
 
   publicAPI.handleXRSelect = (event) => {
+    // console.log(event.inputSource);
+    // console.log(event.inputSource.gamepad.axes);
     publicAPI.xrSelectEvent({ xrEvent: event });
   };
 
   publicAPI.handleXRSelectStart = (event) => {
-    publicAPI.startXrSelectEvent({ xrEvent: event });
+    // const referenceSpace = rw.getXrReferenceSpace();
+    console.log(event.inputSource);
+    console.log(event.inputSource.gamepad.axes);
+    // const pose = event.frame.getPose(gripSpace, referenceSpace);
+    const axes = event.inputSource.gamepad.axes;
+
+    publicAPI.startXrSelectEvent({ xrEvent: event, axes });
   };
   publicAPI.handleXRSelectEnd = (event) => {
+    console.log(event.inputSource);
+    console.log(event.inputSource.gamepad.axes);
+    // console.log(event.inputSource);
+    // console.log(event.inputSource.gamepad.axes);
     publicAPI.endXrSelectEvent({ xrEvent: event });
   };
   publicAPI.handleXRSqueezeStart = (event) => {

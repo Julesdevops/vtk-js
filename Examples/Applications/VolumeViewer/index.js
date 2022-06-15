@@ -162,7 +162,7 @@ function createViewer(rootContainer, fileContents, options) {
   renderer.resetCamera();
   renderWindow.render();
 
-  global.pipeline = {
+  window.pipeline = {
     actor,
     renderer,
     renderWindow,
@@ -172,6 +172,9 @@ function createViewer(rootContainer, fileContents, options) {
     piecewiseFunction,
     fullScreenRenderer,
   };
+  window.camera = renderer.getActiveCamera();
+  window.renderer = renderer;
+  window.rerender = renderWindow.render;
 
   if (userParams.fps) {
     const fpsElm = fpsMonitor.getFpsMonitorContainer();
