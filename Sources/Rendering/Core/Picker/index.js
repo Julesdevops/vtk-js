@@ -201,6 +201,33 @@ function vtkPicker(publicAPI, model) {
         } // if visible and pickable and not transparent
       }
     });
+    // sort array by distance
+    const tempArray = [];
+    for (let i = 0; i < model.pickedPositions.length; i++) {
+      tempArray.push({
+        actor: model.actors[i],
+        pickedPosition: model.pickedPositions[i],
+        distance2: vtkMath.distance2BetweenPoints(
+          p1World,
+          model.pickedPositions[i]
+        ),
+      });
+    }
+    tempArray.sort((a, b) => {
+      const keyA = a.distance2;
+      const keyB = b.distance2;
+      // order the actors based on the distance2 attribute, so the near actors comes
+      // first in the list
+      if (keyA < keyB) return -1;
+      if (keyA > keyB) return 1;
+      return 0;
+    });
+    model.pickedPositions = [];
+    model.actors = [];
+    tempArray.forEach((obj) => {
+      model.pickedPositions.push(obj.pickedPosition);
+      model.actors.push(obj.actor);
+    });
   }
 
   function initialize() {
@@ -266,20 +293,6 @@ function vtkPicker(publicAPI, model) {
     let tB;
     const p1World = [];
     const p2World = [];
-    let viewport = [];
-    let winSize = [];
-    let x;
-    let y;
-    let windowLowerLeft = [];
-    let windowUpperRight = [];
-    let tol = 0.0;
-    let props = [];
-    let pickable = false;
-    const p1Mapper = new Float64Array(4);
-    const p2Mapper = new Float64Array(4);
-    const bbox = vtkBoundingBox.newInstance();
-    const t = [];
-    const hitPosition = [];
     const view = renderer.getRenderWindow().getViews()[0];
 
     initialize();
@@ -290,7 +303,7 @@ function vtkPicker(publicAPI, model) {
 
     if (!renderer) {
       vtkErrorMacro('Picker::Pick Must specify renderer');
-      return;
+      return false;
     }
 
     // Get camera focal point and position. Convert to display (screen)
@@ -347,7 +360,7 @@ function vtkPicker(publicAPI, model) {
     const rayLength = vtkMath.dot(cameraDOP, ray);
     if (rayLength === 0.0) {
       vtkWarningMacro('Picker::Pick Cannot process points');
-      return;
+      return false;
     }
 
     clipRange = camera.getClippingRange();
@@ -370,6 +383,7 @@ function vtkPicker(publicAPI, model) {
     p1World[3] = 1.0;
     p2World[3] = 1.0;
 
+<<<<<<< HEAD
     // Compute the tolerance in world coordinates.  Do this by
     // determining the world coordinates of the diagonal points of the
     // window, computing the width of the window in world coordinates, and
@@ -514,33 +528,11 @@ function vtkPicker(publicAPI, model) {
       publicAPI.invokePickChange(model.pickedPositions);
       return 1;
     });
-    // sort array by distance
-    const tempArray = [];
-    for (let i = 0; i < model.pickedPositions.length; i++) {
-      tempArray.push({
-        actor: model.actors[i],
-        pickedPosition: model.pickedPositions[i],
-        distance2: vtkMath.distance2BetweenPoints(
-          p1World,
-          model.pickedPositions[i]
-        ),
-      });
-    }
-    tempArray.sort((a, b) => {
-      const keyA = a.distance2;
-      const keyB = b.distance2;
-      // order the actors based on the distance2 attribute, so the near actors comes
-      // first in the list
-      if (keyA < keyB) return -1;
-      if (keyA > keyB) return 1;
-      return 0;
-    });
-    model.pickedPositions = [];
-    model.actors = [];
-    tempArray.forEach((obj) => {
-      model.pickedPositions.push(obj.pickedPosition);
-      model.actors.push(obj.actor);
-    });
+=======
+    const result = pick3DInternal(model.renderer, p1World, p2World);
+    publicAPI.invokePickChange(model.pickedPositions);
+    return result;
+>>>>>>> 026a490260f (refactor(picker): use pick3dinternal in pick)
   };
 
   publicAPI.pick3DRay = (pos, wori, renderer) => {
