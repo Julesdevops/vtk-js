@@ -1,5 +1,5 @@
 import vtkCell from '../../../Common/DataModel/Cell';
-import { Vector3 } from '../../../types';
+import { Vector3, Vector4 } from '../../../types';
 import vtkMapper from '../Mapper';
 import vtkPicker, { IPickerInitialValues } from '../Picker';
 import vtkRenderer from '../Renderer';
@@ -83,6 +83,15 @@ export interface vtkCellPicker extends vtkPicker {
 	 * @param {vtkRenderer} renderer The vtkRenderer instance.
 	 */
 	pick(selection: any, renderer: vtkRenderer): void;
+
+	/**
+	 * Perform pick operation with the provided selectionPoint and orientation.
+	 *
+	 * @param {Vector3} selectionPoint in world coordinate
+	 * @param {Vector4} orientation
+	 * @param {vtkRenderer} renderer
+	 */
+	pick3DRay(selectionPoint: Vector3, orientation: Vector4, renderer: vtkRenderer): void;
 
 	/**
 	 * 

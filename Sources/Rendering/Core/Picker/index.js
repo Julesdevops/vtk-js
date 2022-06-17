@@ -40,7 +40,7 @@ function vtkPicker(publicAPI, model) {
 
     if (!renderer) {
       vtkErrorMacro('You must specify a renderer.');
-      return;
+      return false;
     }
 
     // Compute the tolerance in world coordinates.  Do this by
@@ -228,6 +228,8 @@ function vtkPicker(publicAPI, model) {
       model.pickedPositions.push(obj.pickedPosition);
       model.actors.push(obj.actor);
     });
+
+    return true;
   }
 
   function initialize() {
@@ -383,161 +385,13 @@ function vtkPicker(publicAPI, model) {
     p1World[3] = 1.0;
     p2World[3] = 1.0;
 
-<<<<<<< HEAD
-    // Compute the tolerance in world coordinates.  Do this by
-    // determining the world coordinates of the diagonal points of the
-    // window, computing the width of the window in world coordinates, and
-    // multiplying by the tolerance.
-    viewport = renderer.getViewport();
-    if (renderer.getRenderWindow()) {
-      winSize = renderer.getRenderWindow().getViews()[0].getSize();
-    }
-    x = winSize[0] * viewport[0];
-    y = winSize[1] * viewport[1];
-    const normalizedLeftDisplay = view.displayToNormalizedDisplay(
-      x,
-      y,
-      selectionZ
-    );
-    windowLowerLeft = renderer.normalizedDisplayToWorld(
-      normalizedLeftDisplay[0],
-      normalizedLeftDisplay[1],
-      normalizedLeftDisplay[2],
-      aspect
-    );
-
-    x = winSize[0] * viewport[2];
-    y = winSize[1] * viewport[3];
-    const normalizedRightDisplay = view.displayToNormalizedDisplay(
-      x,
-      y,
-      selectionZ
-    );
-    windowUpperRight = renderer.normalizedDisplayToWorld(
-      normalizedRightDisplay[0],
-      normalizedRightDisplay[1],
-      normalizedRightDisplay[2],
-      aspect
-    );
-
-    for (let i = 0; i < 3; i++) {
-      tol +=
-        (windowUpperRight[i] - windowLowerLeft[i]) *
-        (windowUpperRight[i] - windowLowerLeft[i]);
-    }
-
-    tol = Math.sqrt(tol) * model.tolerance;
-    if (model.pickFromList) {
-      props = model.pickList;
-    } else {
-      props = renderer.getActors();
-    }
-    const scale = [];
-    props.forEach((prop) => {
-      const mapper = prop.getMapper();
-      pickable = prop.getNestedPickable() && prop.getNestedVisibility();
-
-      if (prop.getProperty().getOpacity?.() <= 0.0) {
-        pickable = false;
-      }
-
-      if (pickable) {
-        model.transformMatrix = prop.getMatrix().slice(0);
-        // Webgl need a transpose matrix but we need the untransposed one to project world points
-        // into the right referential
-        mat4.transpose(model.transformMatrix, model.transformMatrix);
-        mat4.invert(model.transformMatrix, model.transformMatrix);
-        // Extract scale
-        const col1 = [
-          model.transformMatrix[0],
-          model.transformMatrix[1],
-          model.transformMatrix[2],
-        ];
-        const col2 = [
-          model.transformMatrix[4],
-          model.transformMatrix[5],
-          model.transformMatrix[6],
-        ];
-        const col3 = [
-          model.transformMatrix[8],
-          model.transformMatrix[9],
-          model.transformMatrix[10],
-        ];
-        scale[0] = vtkMath.norm(col1);
-        scale[1] = vtkMath.norm(col2);
-        scale[2] = vtkMath.norm(col3);
-
-        vec4.transformMat4(p1Mapper, p1World, model.transformMatrix);
-        vec4.transformMat4(p2Mapper, p2World, model.transformMatrix);
-
-        p1Mapper[0] /= p1Mapper[3];
-        p1Mapper[1] /= p1Mapper[3];
-        p1Mapper[2] /= p1Mapper[3];
-
-        p2Mapper[0] /= p2Mapper[3];
-        p2Mapper[1] /= p2Mapper[3];
-        p2Mapper[2] /= p2Mapper[3];
-
-        for (let i = 0; i < 3; i++) {
-          ray[i] = p2Mapper[i] - p1Mapper[i];
-        }
-
-        if (mapper) {
-          bbox.setBounds(mapper.getBounds());
-          bbox.inflate(tol);
-        } else {
-          bbox.reset();
-        }
-
-        if (bbox.intersectBox(p1Mapper, ray, hitPosition, t)) {
-          t[0] = publicAPI.intersectWithLine(
-            p1Mapper,
-            p2Mapper,
-            tol * 0.333 * (scale[0] + scale[1] + scale[2]),
-            prop,
-            mapper
-          );
-          if (t[0] < Number.MAX_VALUE) {
-            const p = [];
-            p[0] = (1.0 - t[0]) * p1World[0] + t[0] * p2World[0];
-            p[1] = (1.0 - t[0]) * p1World[1] + t[0] * p2World[1];
-            p[2] = (1.0 - t[0]) * p1World[2] + t[0] * p2World[2];
-
-            // Check if the current actor is already in the list
-            let actorID = -1;
-            for (let i = 0; i < model.actors.length; i++) {
-              if (model.actors[i] === prop) {
-                actorID = i;
-                break;
-              }
-            }
-            if (actorID === -1) {
-              model.actors.push(prop);
-              model.pickedPositions.push(p);
-            } else {
-              const oldPoint = model.pickedPositions[actorID];
-              const distOld = vtkMath.distance2BetweenPoints(p1World, oldPoint);
-              const distCurrent = vtkMath.distance2BetweenPoints(p1World, p);
-              if (distCurrent < distOld) {
-                model.pickedPositions[actorID] = p;
-              }
-            }
-          }
-        }
-      }
-      publicAPI.invokePickChange(model.pickedPositions);
-      return 1;
-    });
-=======
     const result = pick3DInternal(model.renderer, p1World, p2World);
     publicAPI.invokePickChange(model.pickedPositions);
     return result;
->>>>>>> 026a490260f (refactor(picker): use pick3dinternal in pick)
   };
 
   publicAPI.pick3DRay = (pos, wori, renderer) => {
-    //  Initialize picking process
-    publicAPI.initialize();
+    initialize();
     model.renderer = renderer;
 
     const wp1 = [];
@@ -566,7 +420,7 @@ function vtkPicker(publicAPI, model) {
     // --------
 
     for (let i = 0; i < 3; i++) {
-      model.pickPosition = pos[i];
+      model.pickPosition[i] = pos[i];
       wp1[i] = pos[i];
       wp2[i] = pos[i] + dist * rayDirection[i];
     }

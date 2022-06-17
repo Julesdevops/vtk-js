@@ -172,6 +172,35 @@ function vtkCellPicker(publicAPI, model) {
     return pickResult;
   };
 
+  publicAPI.pick3DRay = (selectionPoint, orientation, renderer) => {
+    publicAPI.initialize();
+    const pickResult = superClass.pick3DRay(
+      selectionPoint,
+      orientation,
+      renderer
+    );
+
+    if (pickResult) {
+      const camera = renderer.getActiveCamera();
+      const cameraPosition = [];
+      camera.getPosition(cameraPosition);
+
+      if (camera.getParallelProjection()) {
+        const cameraFocalPoint = [];
+        camera.getFocalPoint(cameraFocalPoint);
+        model.pickNormal[0] = cameraPosition[0] - cameraFocalPoint[0];
+        model.pickNormal[1] = cameraPosition[1] - cameraFocalPoint[1];
+        model.pickNormal[2] = cameraPosition[2] - cameraFocalPoint[2];
+      } else {
+        model.pickNormal[0] = cameraPosition[0] - model.pickPosition[0];
+        model.pickNormal[1] = cameraPosition[1] - model.pickPosition[1];
+        model.pickNormal[2] = cameraPosition[2] - model.pickPosition[2];
+      }
+      vtkMath.normalize(model.pickNormal);
+    }
+    return pickResult;
+  };
+
   publicAPI.intersectWithLine = (p1, p2, tol, actor, mapper) => {
     let tMin = Number.MAX_VALUE;
     let t1 = 0.0;
