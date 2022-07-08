@@ -80,6 +80,8 @@ function vtkOpenGLRenderWindow(publicAPI, model) {
   // Set our className
   model.classHierarchy.push('vtkOpenGLRenderWindow');
 
+  const cachingContextHandler = createContextProxyHandler();
+
   publicAPI.getViewNodeFactory = () => model.myFactory;
 
   // prevent default context lost handler
@@ -274,7 +276,7 @@ function vtkOpenGLRenderWindow(publicAPI, model) {
         model.canvas.getContext('experimental-webgl', options);
     }
 
-    return result;
+    return new Proxy(result, cachingContextHandler);
   };
 
   publicAPI.restoreContext = () => {
