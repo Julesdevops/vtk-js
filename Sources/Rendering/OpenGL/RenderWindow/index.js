@@ -8,6 +8,7 @@ import vtkOpenGLTextureUnitManager from 'vtk.js/Sources/Rendering/OpenGL/Texture
 import vtkOpenGLViewNodeFactory from 'vtk.js/Sources/Rendering/OpenGL/ViewNodeFactory';
 import vtkRenderPass from 'vtk.js/Sources/Rendering/SceneGraph/RenderPass';
 import vtkRenderWindowViewNode from 'vtk.js/Sources/Rendering/SceneGraph/RenderWindowViewNode';
+import { createContextProxyHandler } from 'vtk.js/Sources/Rendering/OpenGL/RenderWindow/ContextProxy';
 
 const { vtkDebugMacro, vtkErrorMacro } = macro;
 
@@ -17,17 +18,6 @@ const SCREENSHOT_PLACEHOLDER = {
   left: 0,
   width: '100%',
   height: '100%',
-};
-
-const DEFAULT_RESET_FACTORS = {
-  vr: {
-    rescaleFactor: 1.0,
-    translateZ: -0.7, // 0.7 m forward from the camera
-  },
-  ar: {
-    rescaleFactor: 0.25, // scale down AR for viewing comfort by default
-    translateZ: -0.5, // 0.5 m forward from the camera
-  },
 };
 
 function checkRenderTargetSupport(gl, format, type) {
@@ -285,198 +275,6 @@ function vtkOpenGLRenderWindow(publicAPI, model) {
     }
 
     return result;
-  };
-
-  // Request an XR session on the user device with WebXR,
-  // typically in response to a user request such as a button press
-  publicAPI.startXR = (isAR) => {
-    if (navigator.xr === undefined) {
-      throw new Error('WebXR is not available');
-    }
-
-    model.xrSessionIsAR = isAR;
-    const sessionType = isAR ? 'immersive-ar' : 'immersive-vr';
-    if (!navigator.xr.isSessionSupported(sessionType)) {
-      if (isAR) {
-        throw new Error('Device does not support AR session');
-      } else {
-        throw new Error('VR display is not available');
-      }
-    }
-    if (model.xrSession === null) {
-      navigator.xr.requestSession(sessionType).then(publicAPI.enterXR, () => {
-        throw new Error('Failed to create XR session!');
-      });
-    } else {
-      throw new Error('XR Session already exists!');
-    }
-  };
-
-  // When an XR session is available, set up the XRWebGLLayer
-  // and request the first animation frame for the device
-  publicAPI.enterXR = async (xrSession) => {
-    model.xrSession = xrSession;
-    model.oldCanvasSize = model.size.slice();
-
-    if (model.xrSession !== null) {
-      const gl = publicAPI.get3DContext();
-      await gl.makeXRCompatible();
-
-      const glLayer = new global.XRWebGLLayer(model.xrSession, gl);
-      publicAPI.setSize(glLayer.framebufferWidth, glLayer.framebufferHeight);
-
-      model.xrSession.updateRenderState({
-        baseLayer: glLayer,
-      });
-
-      model.xrSession.requestReferenceSpace('local').then((refSpace) => {
-        model.xrReferenceSpace = refSpace;
-      });
-
-      publicAPI.resetXRScene();
-
-      model.renderable.getInteractor().switchToXRAnimation();
-      model.xrSceneFrame = model.xrSession.requestAnimationFrame(
-        publicAPI.xrRender
-      );
-    } else {
-      throw new Error('Failed to enter VR with a null xrSession.');
-    }
-  };
-
-  publicAPI.resetXRScene = (
-    inputRescaleFactor = DEFAULT_RESET_FACTORS.vr.rescaleFactor,
-    inputTranslateZ = DEFAULT_RESET_FACTORS.vr.translateZ
-  ) => {
-    // Adjust world-to-physical parameters for different modalities
-    // Default parameter values are for VR (model.xrSessionIsAR == false)
-    let rescaleFactor = inputRescaleFactor;
-    let translateZ = inputTranslateZ;
-
-    if (
-      model.xrSessionIsAR &&
-      rescaleFactor === DEFAULT_RESET_FACTORS.vr.rescaleFactor
-    ) {
-      // Scale down by default in AR
-      rescaleFactor = DEFAULT_RESET_FACTORS.ar.rescaleFactor;
-    }
-
-    if (
-      model.xrSessionIsAR &&
-      translateZ === DEFAULT_RESET_FACTORS.vr.translateZ
-    ) {
-      // Default closer to the camera in AR
-      translateZ = DEFAULT_RESET_FACTORS.ar.translateZ;
-    }
-
-    const ren = model.renderable.getRenderers()[0];
-    ren.resetCamera();
-
-    const camera = ren.getActiveCamera();
-    let physicalScale = camera.getPhysicalScale();
-    const physicalTranslation = camera.getPhysicalTranslation();
-
-    physicalScale /= rescaleFactor;
-    translateZ *= physicalScale;
-    physicalTranslation[2] += translateZ;
-
-    camera.setPhysicalScale(physicalScale);
-    camera.setPhysicalTranslation(physicalTranslation);
-    // Clip at 0.1m, 100.0m in physical space by default
-    camera.setClippingRange(0.1 * physicalScale, 100.0 * physicalScale);
-  };
-
-  publicAPI.stopXR = async () => {
-    if (navigator.xr === undefined) {
-      // WebXR polyfill not available so nothing to do
-      return;
-    }
-
-    if (model.xrSession !== null) {
-      model.xrSession.cancelAnimationFrame(model.xrSceneFrame);
-      model.renderable.getInteractor().returnFromXRAnimation();
-      const gl = publicAPI.get3DContext();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-      await model.xrSession.end().catch((error) => {
-        if (!(error instanceof DOMException)) {
-          throw error;
-        }
-      });
-      model.xrSession = null;
-    }
-
-    if (model.oldCanvasSize !== undefined) {
-      publicAPI.setSize(...model.oldCanvasSize);
-    }
-
-    // Reset to default canvas
-    const ren = model.renderable.getRenderers()[0];
-    ren.getActiveCamera().setProjectionMatrix(null);
-    ren.resetCamera();
-
-    ren.setViewport(0.0, 0, 1.0, 1.0);
-    publicAPI.traverseAllPasses();
-  };
-
-  publicAPI.xrRender = async (t, frame) => {
-    const xrSession = frame.session;
-
-    model.renderable
-      .getInteractor()
-      .updateXRGamepads(xrSession, frame, model.xrReferenceSpace);
-
-    model.xrSceneFrame = model.xrSession.requestAnimationFrame(
-      publicAPI.xrRender
-    );
-
-    const xrPose = frame.getViewerPose(model.xrReferenceSpace);
-
-    if (xrPose) {
-      const gl = publicAPI.get3DContext();
-
-      if (model.xrSessionIsAR && model.oldCanvasSize !== undefined) {
-        gl.canvas.width = model.oldCanvasSize[0];
-        gl.canvas.height = model.oldCanvasSize[1];
-      }
-
-      const glLayer = xrSession.renderState.baseLayer;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.clear(gl.DEPTH_BUFFER_BIT);
-
-      // get the first renderer
-      const ren = model.renderable.getRenderers()[0];
-
-      // Do a render pass for each eye
-      xrPose.views.forEach((view) => {
-        const viewport = glLayer.getViewport(view);
-
-        gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
-
-        // TODO: Appropriate handling for AR passthrough on HMDs
-        // with two eyes will require further investigation.
-        if (!model.xrSessionIsAR) {
-          if (view.eye === 'left') {
-            ren.setViewport(0, 0, 0.5, 1.0);
-          } else if (view.eye === 'right') {
-            ren.setViewport(0.5, 0, 1.0, 1.0);
-          } else {
-            // No handling for non-eye viewport
-            return;
-          }
-        }
-
-        ren
-          .getActiveCamera()
-          .computeViewParametersFromPhysicalMatrix(
-            view.transform.inverse.matrix
-          );
-        ren.getActiveCamera().setProjectionMatrix(view.projectionMatrix);
-
-        publicAPI.traverseAllPasses();
-      });
-    }
   };
 
   publicAPI.restoreContext = () => {
@@ -1240,10 +1038,6 @@ const DEFAULT_VALUES = {
   webgl2: false,
   defaultToWebgl2: true, // attempt webgl2 on by default
   activeFramebuffer: null,
-  xrSession: null,
-  xrSessionIsAR: false,
-  xrReferenceSpace: null,
-  xrSupported: true,
   imageFormat: 'image/png',
   useOffScreen: false,
   useBackgroundImage: false,
@@ -1297,9 +1091,8 @@ export function extend(publicAPI, model, initialValues = {}) {
     'shaderCache',
     'textureUnitManager',
     'webgl2',
-    'vrDisplay',
     'useBackgroundImage',
-    'xrSupported',
+    'activeFramebuffer',
   ]);
 
   macro.setGet(publicAPI, model, [

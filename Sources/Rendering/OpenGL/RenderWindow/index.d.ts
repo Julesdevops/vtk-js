@@ -24,10 +24,6 @@ export interface IOpenGLRenderWindowInitialValues {
 	webgl2?: boolean;
 	defaultToWebgl2?: boolean;
 	activeFramebuffer?: any;
-	xrSession?: any;
-	xrSessionIsAR?: boolean;
-	xrReferenceSpace?: any;
-	xrSupported?: boolean;
 	imageFormat?: 'image/png';
 	useOffScreen?: boolean;
 	useBackgroundImage?: boolean;
@@ -225,21 +221,6 @@ export interface vtkOpenGLRenderWindow extends vtkOpenGLRenderWindowBase {
 	 * @param {I3DContextOptions} options
 	 */
 	get3DContext(options: I3DContextOptions): Nullable<WebGLRenderingContext>;
-
-	/**
-	 *
-	 */
-	startVR(): void;
-
-	/**
-	 *
-	 */
-	stopVR(): void;
-
-	/**
-	 *
-	 */
-	vrRender(): void;
 
 	/**
 	 *
