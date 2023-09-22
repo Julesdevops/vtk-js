@@ -1,10 +1,10 @@
 // For streamlined VR development install the WebXR emulator extension
 // https://github.com/MozillaReality/WebXR-emulator-extension
 
-import 'vtk.js/Sources/favicon';
+import '@kitware/vtk.js/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import 'vtk.js/Sources/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 
 import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkCalculator from '@kitware/vtk.js/Filters/General/Calculator';
@@ -17,26 +17,22 @@ import { FieldDataTypes } from '@kitware/vtk.js/Common/DataModel/DataSet/Constan
 import { XrSessionTypes } from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper/Constants';
 
 // Force DataAccessHelper to have access to various data source
-import 'vtk.js/Sources/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
-import 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import 'vtk.js/Sources/IO/Core/DataAccessHelper/JSZipDataAccessHelper';
+import '@kitware/vtk.js/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
+import '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import '@kitware/vtk.js/IO/Core/DataAccessHelper/JSZipDataAccessHelper';
 
-import vtkResourceLoader from 'vtk.js/Sources/IO/Core/ResourceLoader';
-
-// Custom UI controls, including button to start XR session
 import controlPanel from './controller.html';
 
-// Dynamically load WebXR polyfill from CDN for WebVR and Cardboard API backwards compatibility
-if (navigator.xr === undefined) {
-  vtkResourceLoader
-    .loadScript(
-      'https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'
-    )
-    .then(() => {
-      // eslint-disable-next-line no-new, no-undef
-      new WebXRPolyfill();
-    });
-}
+// Import the Looking Glass WebXR Polyfill override
+// Assumes that the Looking Glass Bridge native application is already running.
+// See https://docs.lookingglassfactory.com/developer-tools/webxr
+import(
+  // eslint-disable-next-line import/no-unresolved, import/extensions
+  /* webpackIgnore: true */ 'https://unpkg.com/@lookingglass/webxr@0.3.0/dist/@lookingglass/bundle/webxr.js'
+).then((obj) => {
+  // eslint-disable-next-line no-new
+  new obj.LookingGlassWebXRPolyfill();
+});
 
 // ----------------------------------------------------------------------------
 // Standard rendering code setup
@@ -47,7 +43,7 @@ const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
 });
 const renderer = fullScreenRenderer.getRenderer();
 const renderWindow = fullScreenRenderer.getRenderWindow();
-const XRHelper = vtkWebXRRenderWindowHelper.newInstance({
+const xrRenderWindowHelper = vtkWebXRRenderWindowHelper.newInstance({
   renderWindow: fullScreenRenderer.getApiSpecificRenderWindow(),
 });
 
@@ -59,7 +55,7 @@ const XRHelper = vtkWebXRRenderWindowHelper.newInstance({
 // this
 // ----------------------------------------------------------------------------
 
-const coneSource = vtkConeSource.newInstance({ height: 100.0, radius: 50 });
+const coneSource = vtkConeSource.newInstance({ height: 1.0, radius: 0.5 });
 const filter = vtkCalculator.newInstance();
 
 filter.setInputConnection(coneSource.getOutputPort());
@@ -117,12 +113,12 @@ resolutionChange.addEventListener('input', (e) => {
 });
 
 vrbutton.addEventListener('click', (e) => {
-  if (vrbutton.textContent === 'Send To VR') {
-    XRHelper.startXR(XrSessionTypes.HmdVR);
-    vrbutton.textContent = 'Return From VR';
+  if (vrbutton.textContent === 'Send To Looking Glass') {
+    xrRenderWindowHelper.startXR(XrSessionTypes.LookingGlassVR);
+    vrbutton.textContent = 'Return From Looking Glass';
   } else {
-    XRHelper.stopXR();
-    vrbutton.textContent = 'Send To VR';
+    xrRenderWindowHelper.stopXR();
+    vrbutton.textContent = 'Send To Looking Glass';
   }
 });
 

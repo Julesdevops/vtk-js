@@ -6,14 +6,15 @@ import 'vtk.js/Sources/favicon';
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import 'vtk.js/Sources/Rendering/Profiles/Geometry';
 
-import HttpDataAccessHelper from 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import macro from 'vtk.js/Sources/macros';
-import vtkDeviceOrientationToCamera from 'vtk.js/Sources/Interaction/Misc/DeviceOrientationToCamera';
-import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import vtkSkybox from 'vtk.js/Sources/Rendering/Core/Skybox';
-import vtkSkyboxReader from 'vtk.js/Sources/IO/Misc/SkyboxReader';
-import vtkURLExtract from 'vtk.js/Sources/Common/Core/URLExtract';
-// import vtkMobileVR from 'vtk.js/Sources/Common/System/MobileVR';
+import HttpDataAccessHelper from '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import macro from '@kitware/vtk.js/macros';
+import vtkDeviceOrientationToCamera from '@kitware/vtk.js/Interaction/Misc/DeviceOrientationToCamera';
+import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
+import vtkWebXRRenderWindowHelper from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper';
+import vtkSkybox from '@kitware/vtk.js/Rendering/Core/Skybox';
+import vtkSkyboxReader from '@kitware/vtk.js/IO/Misc/SkyboxReader';
+import vtkURLExtract from '@kitware/vtk.js/Common/Core/URLExtract';
+import { XrSessionTypes } from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper/Constants';
 
 // Force DataAccessHelper to have access to various data source
 import 'vtk.js/Sources/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
@@ -157,6 +158,9 @@ function createVisualization(container, mapReader) {
     containerStyle: { height: '100%', width: '100%', position: 'absolute' },
   });
   const renderWindow = fullScreenRenderer.getRenderWindow();
+  const xrRenderWindowHelper = vtkWebXRRenderWindowHelper.newInstance({
+    renderWindow: fullScreenRenderer.getApiSpecificRenderWindow(),
+  });
   const mainRenderer = fullScreenRenderer.getRenderer();
   const interactor = fullScreenRenderer.getInteractor();
   const actor = vtkSkybox.newInstance();
@@ -202,6 +206,7 @@ function createVisualization(container, mapReader) {
   // add vr option button if supported
   if (
     navigator.xr !== undefined &&
+    xrRenderWindowHelper.getXrSupported() &&
     navigator.xr.isSessionSupported('immersive-vr')
   ) {
     const button = document.createElement('button');
@@ -213,10 +218,10 @@ function createVisualization(container, mapReader) {
     document.querySelector('body').appendChild(button);
     button.addEventListener('click', () => {
       if (button.textContent === 'Send To VR') {
-        fullScreenRenderer.getApiSpecificRenderWindow().startXR();
+        xrRenderWindowHelper.startXR(XrSessionTypes.HmdVR);
         button.textContent = 'Return From VR';
       } else {
-        fullScreenRenderer.getApiSpecificRenderWindow().stopXR();
+        xrRenderWindowHelper.stopXR();
         button.textContent = 'Send To VR';
       }
     });

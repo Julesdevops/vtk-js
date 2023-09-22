@@ -6,18 +6,20 @@ import 'vtk.js/Sources/favicon';
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import 'vtk.js/Sources/Rendering/Profiles/Geometry';
 
-import { formatBytesToProperUnit, debounce } from 'vtk.js/Sources/macros';
-import HttpDataAccessHelper from 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
-import vtkScalarBarActor from 'vtk.js/Sources/Rendering/Core/ScalarBarActor';
-import vtkColorMaps from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction/ColorMaps';
-import vtkColorTransferFunction from 'vtk.js/Sources/Rendering/Core/ColorTransferFunction';
-import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
-import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
-import vtkURLExtract from 'vtk.js/Sources/Common/Core/URLExtract';
-import vtkXMLPolyDataReader from 'vtk.js/Sources/IO/XML/XMLPolyDataReader';
-import vtkFPSMonitor from 'vtk.js/Sources/Interaction/UI/FPSMonitor';
+import { formatBytesToProperUnit, debounce } from '@kitware/vtk.js/macros';
+import HttpDataAccessHelper from '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
+import vtkScalarBarActor from '@kitware/vtk.js/Rendering/Core/ScalarBarActor';
+import vtkColorMaps from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction/ColorMaps';
+import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
+import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
+import vtkWebXRRenderWindowHelper from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper';
+import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+import vtkURLExtract from '@kitware/vtk.js/Common/Core/URLExtract';
+import vtkXMLPolyDataReader from '@kitware/vtk.js/IO/XML/XMLPolyDataReader';
+import vtkFPSMonitor from '@kitware/vtk.js/Interaction/UI/FPSMonitor';
+import { XrSessionTypes } from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper/Constants';
 
 // Force DataAccessHelper to have access to various data source
 import 'vtk.js/Sources/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
@@ -35,6 +37,7 @@ let autoInit = true;
 let background = [0, 0, 0];
 let fullScreenRenderWindow;
 let renderWindow;
+let xrRenderWindowHelper;
 let renderer;
 let scalarBarActor;
 
@@ -123,6 +126,9 @@ function createViewer(container) {
   });
   renderer = fullScreenRenderWindow.getRenderer();
   renderWindow = fullScreenRenderWindow.getRenderWindow();
+  xrRenderWindowHelper = vtkWebXRRenderWindowHelper.newInstance({
+    renderWindow: fullScreenRenderWindow.getApiSpecificRenderWindow(),
+  });
   renderWindow.getInteractor().setDesiredUpdateRate(15);
 
   container.appendChild(rootControllerContainer);
@@ -210,8 +216,8 @@ function createPipeline(fileName, fileContents) {
 
   if (
     navigator.xr !== undefined &&
-    navigator.xr.isSessionSupported('immersive-ar') &&
-    fullScreenRenderWindow.getApiSpecificRenderWindow().getXrSupported()
+    xrRenderWindowHelper.getXrSupported() &&
+    requestedXrSessionType !== null
   ) {
     controlContainer.appendChild(immersionSelector);
   }
@@ -381,18 +387,23 @@ function createPipeline(fileName, fileContents) {
   // Immersion handling
   // --------------------------------------------------------------------
 
-  function toggleAR() {
-    const SESSION_IS_AR = true;
-    if (immersionSelector.textContent === 'Start AR') {
-      fullScreenRenderWindow.setBackground([...background, 0]);
-      fullScreenRenderWindow
-        .getApiSpecificRenderWindow()
-        .startXR(SESSION_IS_AR);
-      immersionSelector.textContent = 'Exit AR';
+  function toggleXR() {
+    if (immersionSelector.textContent.startsWith('Start')) {
+      xrRenderWindowHelper.startXR(requestedXrSessionType);
+      immersionSelector.textContent = [
+        XrSessionTypes.HmdAR,
+        XrSessionTypes.MobileAR,
+      ].includes(requestedXrSessionType)
+        ? 'Exit AR'
+        : 'Exit VR';
     } else {
-      fullScreenRenderWindow.setBackground([...background, 255]);
-      fullScreenRenderWindow.getApiSpecificRenderWindow().stopXR(SESSION_IS_AR);
-      immersionSelector.textContent = 'Start AR';
+      xrRenderWindowHelper.stopXR();
+      immersionSelector.textContent = [
+        XrSessionTypes.HmdAR,
+        XrSessionTypes.MobileAR,
+      ].includes(requestedXrSessionType)
+        ? 'Start AR'
+        : 'Start VR';
     }
   }
   immersionSelector.addEventListener('click', toggleAR);
