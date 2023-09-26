@@ -284,8 +284,7 @@ export function extend(publicAPI, model, initialValues = {}) {
   macro.obj(publicAPI, model);
   macro.event(publicAPI, model, 'event');
 
-  macro.get(publicAPI, model, ['xrSession']);
-  macro.setGet(publicAPI, model, ['renderWindow']);
+  macro.setGet(publicAPI, model, ['renderWindow', 'xrSession']);
 
   // Object methods
   vtkWebXRRenderWindowHelper(publicAPI, model);
