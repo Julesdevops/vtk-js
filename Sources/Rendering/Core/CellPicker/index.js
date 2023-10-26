@@ -195,15 +195,7 @@ function vtkCellPicker(publicAPI, model) {
         model.pCoords = pickData.pCoords;
       }
     } else if (mapper.isA('vtkVolumeMapper')) {
-      tMin = publicAPI.intersectVolumeWithLine(
-        p1,
-        p2,
-        t1,
-        t2,
-        tol,
-        actor,
-        mapper
-      );
+      tMin = publicAPI.intersectVolumeWithLine(p1, p2, t1, t2, tol, actor);
     } else if (mapper.isA('vtkMapper')) {
       tMin = publicAPI.intersectActorWithLine(p1, p2, t1, t2, tol, mapper);
     }
@@ -253,9 +245,9 @@ function vtkCellPicker(publicAPI, model) {
     return tMin;
   };
 
-  publicAPI.intersectVolumeWithLine = (p1, p2, t1, t2, tol, actor, mapper) => {
+  publicAPI.intersectVolumeWithLine = (p1, p2, t1, t2, tol, volume) => {
     let tMin = Number.MAX_VALUE;
-
+    const mapper = volume.getMapper();
     const imageData = mapper.getInputData();
     const origin = imageData.getOrigin();
     const spacing = imageData.getSpacing();
@@ -271,7 +263,7 @@ function vtkCellPicker(publicAPI, model) {
     let oRange;
 
     for (let c = 0; c < numIComps; ++c) {
-      ofun = actor.getProperty().getScalarOpacity(c);
+      ofun = volume.getProperty().getScalarOpacity(c);
       oRange = ofun.getRange();
       ofun.getTable(oRange[0], oRange[1], oWidth, tmpTable, 1);
     }
