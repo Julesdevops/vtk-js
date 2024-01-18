@@ -149,6 +149,57 @@ test('Test vtkCellPicker on triangles', (t) => {
   gc.releaseResources();
 });
 
+test('Test vtkCellPicker.pick3dRay on triangles', (t) => {
+  // Create some control UI
+  const gc = testUtils.createGarbageCollector(t);
+  const container = document.querySelector('body');
+  const renderWindowContainer = gc.registerDOMElement(
+    document.createElement('div')
+  );
+  container.appendChild(renderWindowContainer);
+
+  // Setup window
+  const renderWindow = gc.registerResource(vtkRenderWindow.newInstance());
+  const renderer = gc.registerResource(vtkRenderer.newInstance());
+  renderWindow.addRenderer(renderer);
+
+  // Create what we will view
+  const points = Float32Array.from([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]);
+  const polys = new Float32Array([3, 0, 1, 2, 3, 0, 2, 3]);
+  const polyData = vtkPolyData.newInstance();
+  polyData.getPoints().setData(points);
+  polyData.getPolys().setData(polys);
+
+  const mapper = vtkMapper.newInstance();
+  mapper.setInputData(polyData);
+  const actor = vtkActor.newInstance();
+  actor.setMapper(mapper);
+
+  renderer.addActor(actor);
+
+  // now create something to view it, in this case webgl
+  const glwindow = gc.registerResource(renderWindow.newAPISpecificView());
+  glwindow.setContainer(renderWindowContainer);
+  renderWindow.addView(glwindow);
+  glwindow.setSize(400, 400);
+
+  renderer.resetCamera();
+  renderWindow.render();
+
+  // Test picker
+  const picker = vtkCellPicker.newInstance();
+
+  const p = [0, 0, 0];
+  picker.pick3DRay(p, [0, 1, 0], renderer);
+
+  const actors = picker.getActors();
+
+  t.equal(actors.length, 1);
+  t.equal(actors[0], actor);
+
+  gc.releaseResources();
+});
+
 test('Test vtkCellPicker on quads', (t) => {
   // Create some control UI
   const gc = testUtils.createGarbageCollector(t);

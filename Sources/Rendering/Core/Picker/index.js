@@ -20,6 +20,7 @@ function vtkPicker(publicAPI, model) {
 
   // Private methods
   function pick3DInternal(renderer, p1World, p2World) {
+    console.debug({ p1World, p2World });
     // length 4
     const p1Mapper = new Float64Array(4);
     // length 4
