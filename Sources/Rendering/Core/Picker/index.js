@@ -394,6 +394,14 @@ function vtkPicker(publicAPI, model) {
 
     pick3DInternal(model.renderer, tolerance, p1World, p2World);
   };
+
+  publicAPI.pick3DPoint = (selectionPoint, focalPoint, renderer) => {
+    initialize();
+    model.renderer = renderer;
+
+    // TODO compute tolerance
+    pick3DInternal(renderer, 0, selectionPoint, focalPoint);
+  };
 }
 
 // ----------------------------------------------------------------------------
