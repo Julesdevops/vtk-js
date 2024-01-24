@@ -396,11 +396,29 @@ function vtkPicker(publicAPI, model) {
   };
 
   publicAPI.pick3DPoint = (selectionPoint, focalPoint, renderer) => {
+    if (!renderer) {
+      throw new Error('renderer cannot be null');
+    }
+
     initialize();
     model.renderer = renderer;
 
-    // TODO compute tolerance
-    pick3DInternal(renderer, 0, selectionPoint, focalPoint);
+    const selectionX = selectionPoint[0];
+    const selectionY = selectionPoint[1];
+    const selectionZ = selectionPoint[2];
+
+    model.selectionPoint[0] = selectionX;
+    model.selectionPoint[1] = selectionY;
+    model.selectionPoint[2] = selectionZ;
+
+    const view = renderer.getRenderWindow().getViews()[0];
+    const dims = view.getViewportSize(renderer);
+    const aspect = dims[0] / dims[1];
+
+    const tolerance =
+      computeTolerance(selectionZ, aspect, renderer) * model.tolerance;
+
+    pick3DInternal(renderer, tolerance, selectionPoint, focalPoint);
   };
 }
 
