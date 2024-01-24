@@ -327,6 +327,14 @@ function vtkPicker(publicAPI, model) {
       return 1;
     });
   };
+
+  publicAPI.pick3DPoint = (selectionPoint, focalPoint, renderer) => {
+    initialize();
+    model.renderer = renderer;
+
+    // TODO compute tolerance
+    pick3DInternal(renderer, 0, selectionPoint, focalPoint);
+  };
 }
 
 // ----------------------------------------------------------------------------
