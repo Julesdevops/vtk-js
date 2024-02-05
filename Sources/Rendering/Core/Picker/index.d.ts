@@ -78,6 +78,15 @@ export interface vtkPicker extends vtkAbstractPicker {
 	pick(selection: any, renderer: vtkRenderer): any;
 
 	/**
+	 * Perform pick operation with the provided selection and focal points.
+	 * Both point are in world coordinates.
+	 * @param {Vector3} selectionPoint
+	 * @param {Vector3} focalPoint
+	 * @param {vtkRenderer} renderer
+	 */
+	pick3DPoint(selectionPoint: Vector3, focalPoint: Vector3, renderer: vtkRenderer): void;
+
+	/**
 	 * Set position in mapper coordinates of pick point.
 	 * @param {Number} x The x coordinate.
 	 * @param {Number} y The y coordinate.
