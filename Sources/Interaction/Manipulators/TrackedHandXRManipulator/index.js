@@ -22,39 +22,23 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
   let pickedActor;
   let initialActorPosition; // position of the picked actor at the time if was picked in world coordinates
   let initialPickControllerPosition; // space of the controller that picked the actor at the time it picked the actor
-  let pickDevice; // id of the device/controller that did picking
 
   model.picker = vtkPicker.newInstance();
 
-  // actors for target ray drawing
-  const leftTargetRayLineSource = vtkLineSource.newInstance();
-  const rightTargetRayLineSource = vtkLineSource.newInstance();
+  // actor for target ray drawing
+  const targetRayLineSource = vtkLineSource.newInstance();
 
-  const leftTargetRayMapper = vtkMapper.newInstance();
-  const rightTargetRayMapper = vtkMapper.newInstance();
-  leftTargetRayMapper.setInputConnection(
-    leftTargetRayLineSource.getOutputPort()
-  );
-  rightTargetRayMapper.setInputConnection(
-    rightTargetRayLineSource.getOutputPort()
-  );
+  const targetRayMapper = vtkMapper.newInstance();
+  targetRayMapper.setInputConnection(targetRayLineSource.getOutputPort());
 
-  const leftTargetRayActor = vtkActor.newInstance();
-  leftTargetRayActor.getProperty().setColor(1, 0, 0);
-  leftTargetRayActor.getProperty().setLineWidth(5);
+  const targetRayActor = vtkActor.newInstance();
+  targetRayActor.getProperty().setColor(1, 0, 0);
+  targetRayActor.getProperty().setLineWidth(5);
 
-  const rightTargetRayActor = vtkActor.newInstance();
-  rightTargetRayActor.getProperty().setColor(1, 0, 0);
-  rightTargetRayActor.getProperty().setLineWidth(5);
+  targetRayActor.setMapper(targetRayMapper);
+  targetRayActor.setPickable(false);
 
-  leftTargetRayActor.setMapper(leftTargetRayMapper);
-  rightTargetRayActor.setMapper(rightTargetRayMapper);
-
-  leftTargetRayActor.setPickable(false);
-  rightTargetRayActor.setPickable(false);
-
-  let leftOk = false;
-  let rightOk = false;
+  let rayOk = false;
 
   publicAPI.onButton3D = (interactorStyle, state, eventData) => {
     const camera = eventData.pokedRenderer.getActiveCamera();
@@ -100,7 +84,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
         pickedActor = actors[0];
         initialActorPosition = pickedActor.getPosition();
         initialPickControllerPosition = structuredClone(targetRayWorldPos);
-        pickDevice = eventData.device;
         console.debug('picked something!');
       } else {
         if (pickedActor) {
@@ -108,7 +91,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
           pickedActor = undefined;
           initialActorPosition = undefined;
           initialPickControllerPosition = undefined;
-          pickDevice = undefined;
         }
         console.debug('picked nothing!');
       }
@@ -147,41 +129,24 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       .getActiveCamera()
       .getClippingRange()[1];
 
-    // left hand
-    if (eventData.device === Device.LeftController) {
-      if (!leftOk) {
-        eventData.pokedRenderer.addActor(leftTargetRayActor);
-        leftOk = true;
-      }
-      leftTargetRayLineSource.setPoint1(
-        targetRayPos[0] - dir[0] * dist,
-        targetRayPos[1] - dir[1] * dist,
-        targetRayPos[2] - dir[2] * dist
-      );
-      leftTargetRayLineSource.setPoint2(...targetRayPos);
+    // target ray
+    if (!rayOk) {
+      eventData.pokedRenderer.addActor(targetRayActor);
+      rayOk = true;
     }
 
-    // right hand
-    if (eventData.device === Device.RightController) {
-      if (!rightOk) {
-        eventData.pokedRenderer.addActor(rightTargetRayActor);
-        rightOk = true;
-      }
+    targetRayLineSource.setPoint1(
+      targetRayPos[0] - dir[0] * dist,
+      targetRayPos[1] - dir[1] * dist,
+      targetRayPos[2] - dir[2] * dist
+    );
+    targetRayLineSource.setPoint2(...targetRayPos);
 
-      rightTargetRayLineSource.setPoint1(
-        targetRayPos[0] - dir[0] * dist,
-        targetRayPos[1] - dir[1] * dist,
-        targetRayPos[2] - dir[2] * dist
-      );
-      rightTargetRayLineSource.setPoint2(...targetRayPos);
-    }
-
-    if (pickedActor && pickDevice === eventData.device) {
+    if (pickedActor) {
       const displacement = [];
       vec3.subtract(displacement, targetRayPos, initialPickControllerPosition);
       const newActorPos = [];
       vec3.add(newActorPos, displacement, initialActorPosition);
-
       pickedActor.setPosition(...newActorPos);
     }
 

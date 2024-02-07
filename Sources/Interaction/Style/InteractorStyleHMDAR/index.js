@@ -7,19 +7,23 @@ import {
   Input,
 } from 'vtk.js/Sources/Rendering/Core/RenderWindowInteractor/Constants';
 
-function vtkInteractorStyleHMDXR(publicAPI, model) {
-  model.classHierarchy.push('vtkInteractorStyleHMDXR');
+function vtkInteractorStyleHMDAR(publicAPI, model) {
+  model.classHierarchy.push('vtkInteractorStyleHMDAR');
 
-  model.TrackedHandXRManipulator = vtkTrackedHandXRManipulator.newInstance();
+  const leftHandManipulator = vtkTrackedHandXRManipulator.newInstance();
+  const rightHandManipulator = vtkTrackedHandXRManipulator.newInstance();
 
-  model.TrackedHandXRManipulator.setDevice(Device.Right);
-  model.TrackedHandXRManipulator.setInput(Input.A);
+  leftHandManipulator.setDevice(Device.Left);
+  rightHandManipulator.setDevice(Device.Right);
 
-  publicAPI.addVRManipulator(model.TrackedHandXRManipulator);
+  leftHandManipulator.setInput(Input.A);
+  rightHandManipulator.setInput(Input.B);
 
-  publicAPI.setPicker = function setPicker(picker) {
-    model.TrackedHandXRManipulator.setPicker(picker);
-  };
+  model.leftHandManipulator = leftHandManipulator;
+  model.rightHandManipulator = rightHandManipulator;
+
+  publicAPI.addVRManipulator(model.leftHandManipulator);
+  publicAPI.addVRManipulator(model.rightHandManipulator);
 }
 
 // ----------------------------------------------------------------------------
@@ -37,12 +41,12 @@ export function extend(publicAPI, model, initialValues = {}) {
   vtkInteractorStyleManipulator.extend(publicAPI, model, initialValues);
 
   // Object specific methods
-  vtkInteractorStyleHMDXR(publicAPI, model);
+  vtkInteractorStyleHMDAR(publicAPI, model);
 }
 
 // ----------------------------------------------------------------------------
 
-export const newInstance = macro.newInstance(extend, 'vtkInteractorStyleHMDXR');
+export const newInstance = macro.newInstance(extend, 'vtkInteractorStyleHMDAR');
 
 // ----------------------------------------------------------------------------
 

@@ -17,7 +17,7 @@ import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 // import { FieldDataTypes } from '@kitware/vtk.js/Common/DataModel/DataSet/Constants';
 import { XrSessionTypes } from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper/Constants';
 
-import vtkInteractorStyleHMDXR from '@kitware/vtk.js/Interaction/Style/InteractorStyleHMDXR';
+import vtkInteractorStyleHMDAR from '@kitware/vtk.js/Interaction/Style/InteractorStyleHMDAR';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 
 // Force DataAccessHelper to have access to various data source
@@ -56,7 +56,7 @@ interactor.initialize();
 
 // const picker = vtkPicker.newInstance();
 // picker.setPickFromList(true);
-const is = vtkInteractorStyleHMDXR.newInstance();
+const is = vtkInteractorStyleHMDAR.newInstance();
 // is.setPicker(picker);
 interactor.setInteractorStyle(is);
 
