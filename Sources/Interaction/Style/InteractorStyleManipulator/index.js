@@ -284,16 +284,27 @@ function vtkInteractorStyleManipulator(publicAPI, model) {
 
   //-------------------------------------------------------------------------
   publicAPI.handleButton3D = (ed) => {
-    console.debug('InteractorStyleManipulator - handleButton3D');
     if (!ed) {
       return;
     }
 
     // Look for a matching 3D camera interactor.
-    model.currentManipulator = publicAPI.findVRManipulator(ed.device, ed.input);
-
+    model.currentManipulator = publicAPI.findVRManipulator(
+      ed.device,
+      ed.input,
+      ed.pressed
+    );
     if (model.currentManipulator) {
-      model.currentManipulator.onButton3D(publicAPI, model.state, ed);
+      model.currentManipulator.onButton3D(
+        publicAPI,
+        ed.pokedRenderer,
+        model.state,
+        ed.device,
+        ed.input,
+        ed.pressed,
+        ed.targetPosition,
+        ed.targetOrientation
+      );
       if (ed.pressed) {
         publicAPI.startCameraPose();
       } else {
@@ -306,10 +317,13 @@ function vtkInteractorStyleManipulator(publicAPI, model) {
 
   //-------------------------------------------------------------------------
   publicAPI.handleMove3D = (ed) => {
-    // console.debug('InteractorStyleManipulator - handleMove3D');
-    // if (model.currentManipulator && model.state === States.IS_CAMERA_POSE) {
-    if (model.currentManipulator) {
-      model.currentManipulator.onMove3D(publicAPI, model.state, ed);
+    if (model.currentManipulator && model.state === States.IS_CAMERA_POSE) {
+      model.currentManipulator.onMove3D(
+        publicAPI,
+        ed.pokedRenderer,
+        model.state,
+        ed
+      );
     }
   };
 
@@ -370,19 +384,15 @@ function vtkInteractorStyleManipulator(publicAPI, model) {
 
   //-------------------------------------------------------------------------
   publicAPI.findVRManipulator = (device, input) => {
-    console.debug('InteractorStyleManipulator - findVRManipulator');
-    console.debug(input);
-
     // Look for a matching camera manipulator
-    // let manipulator = null;
-    // let count = model.vrManipulators.length;
-    // while (count--) {
-    //   const manip = model.vrManipulators[count];
-    //   if (manip && manip.getDevice() === device && manip.getInput() === input) {
-    //     manipulator = manip;
-    //   }
-    // }
-    const manipulator = model.vrManipulators[0];
+    let manipulator = null;
+    let count = model.vrManipulators.length;
+    while (count--) {
+      const manip = model.vrManipulators[count];
+      if (manip && manip.getDevice() === device && manip.getInput() === input) {
+        manipulator = manip;
+      }
+    }
     return manipulator;
   };
 

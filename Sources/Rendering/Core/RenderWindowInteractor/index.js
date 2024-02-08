@@ -553,7 +553,6 @@ function vtkRenderWindowInteractor(publicAPI, model) {
 
       const gamepad = inputSource.gamepad;
       const hand = inputSource.handedness;
-      // console.debug('updateXRGamepads ', inputSource.gamepad);
 
       if (!gamepad) {
         return;
@@ -580,12 +579,12 @@ function vtkRenderWindowInteractor(publicAPI, model) {
             gamepad.buttons[buttonIdx].pressed &&
           gripPose != null
         ) {
-          // console.debug('firing button3DEvent');
           publicAPI.button3DEvent({
             gamepad,
             position: gripPose.transform.position,
             orientation: gripPose.transform.orientation,
-            trPose: targetRayPose,
+            targetPosition: targetRayPose.transform.position,
+            targetOrientation: targetRayPose.transform.orientation,
             pressed: gamepad.buttons[buttonIdx].pressed,
             device:
               inputSource.handedness === 'left'
@@ -597,18 +596,19 @@ function vtkRenderWindowInteractor(publicAPI, model) {
                 ? deviceInputMap[gamepad.mapping][buttonIdx]
                 : Input.Trigger,
           });
-          // model.lastGamepadValues[gamepad.index][hand].buttons[buttonIdx] = gamepad.buttons[buttonIdx].pressed;
+          model.lastGamepadValues[gamepad.index][hand].buttons[buttonIdx] =
+            gamepad.buttons[buttonIdx].pressed;
         }
         if (
-          // model.lastGamepadValues[gamepad.index][hand].buttons[buttonIdx] &&
+          model.lastGamepadValues[gamepad.index][hand].buttons[buttonIdx] &&
           gripPose != null
         ) {
-          // console.debug('firing move3DEvent');
           publicAPI.move3DEvent({
             gamepad,
             position: gripPose.transform.position,
             orientation: gripPose.transform.orientation,
-            trPose: targetRayPose,
+            targetPosition: targetRayPose.transform.position,
+            targetOrientation: targetRayPose.transform.orientation,
             device:
               inputSource.handedness === 'left'
                 ? Device.LeftController
