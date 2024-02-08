@@ -64,6 +64,7 @@ const renderer = fullScreenRenderer.getRenderer();
 const renderWindow = fullScreenRenderer.getRenderWindow();
 const XRHelper = vtkWebXRRenderWindowHelper.newInstance({
   renderWindow: fullScreenRenderer.getApiSpecificRenderWindow(),
+  drawControllersRay: true,
 });
 
 // nice cone bro!

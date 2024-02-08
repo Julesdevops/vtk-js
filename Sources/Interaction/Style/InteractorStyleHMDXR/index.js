@@ -1,6 +1,7 @@
 import macro from 'vtk.js/Sources/macros';
 import vtkInteractorStyleManipulator from 'vtk.js/Sources/Interaction/Style/InteractorStyleManipulator';
-import vtkTrackedHandXRManipulator from 'vtk.js/Sources/Interaction/Manipulators/TrackedHandXRManipulator';
+import vtkPicker from '@kitware/vtk.js/Rendering/Core/Picker';
+import vtk3DControllerModelSelectorManipulator from 'vtk.js/Sources/Interaction/Manipulators/3DControllerModelSelectorManipulator';
 
 import {
   Device,
@@ -10,15 +11,32 @@ import {
 function vtkInteractorStyleHMDXR(publicAPI, model) {
   model.classHierarchy.push('vtkInteractorStyleHMDXR');
 
-  model.TrackedHandXRManipulator = vtkTrackedHandXRManipulator.newInstance();
+  const defaultLeftPicker = vtkPicker.newInstance();
+  const defaultRIghtPicker = vtkPicker.newInstance();
 
-  model.TrackedHandXRManipulator.setDevice(Device.Right);
-  model.TrackedHandXRManipulator.setInput(Input.A);
+  const leftHandManipulator =
+    vtk3DControllerModelSelectorManipulator.newInstance();
+  const rightHandManipulator =
+    vtk3DControllerModelSelectorManipulator.newInstance();
 
-  publicAPI.addVRManipulator(model.TrackedHandXRManipulator);
+  leftHandManipulator.setDevice(Device.LeftController);
+  rightHandManipulator.setDevice(Device.RightController);
+
+  leftHandManipulator.setInput(Input.A);
+  rightHandManipulator.setInput(Input.A);
+
+  model.leftHandManipulator = leftHandManipulator;
+  model.rightHandManipulator = rightHandManipulator;
+
+  model.leftHandManipulator.setPicker(defaultLeftPicker);
+  model.rightHandManipulator.setPicker(defaultRIghtPicker);
+
+  publicAPI.addVRManipulator(model.leftHandManipulator);
+  publicAPI.addVRManipulator(model.rightHandManipulator);
 
   publicAPI.setPicker = function setPicker(picker) {
-    model.TrackedHandXRManipulator.setPicker(picker);
+    model.leftHandManipulator.setPicker(picker);
+    model.rightHandManipulator.setPicker(picker);
   };
 }
 
