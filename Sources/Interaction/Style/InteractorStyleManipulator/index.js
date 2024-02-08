@@ -284,7 +284,6 @@ function vtkInteractorStyleManipulator(publicAPI, model) {
 
   //-------------------------------------------------------------------------
   publicAPI.handleButton3D = (ed) => {
-    console.debug('InteractorStyleManipulator - handleButton3D');
     if (!ed) {
       return;
     }
@@ -370,8 +369,8 @@ function vtkInteractorStyleManipulator(publicAPI, model) {
 
   //-------------------------------------------------------------------------
   publicAPI.findVRManipulator = (device, input) => {
-    console.debug('InteractorStyleManipulator - findVRManipulator');
-    console.debug(input);
+    // console.debug('InteractorStyleManipulator - findVRManipulator');
+    // console.debug(input);
 
     // Look for a matching camera manipulator
     // let manipulator = null;
