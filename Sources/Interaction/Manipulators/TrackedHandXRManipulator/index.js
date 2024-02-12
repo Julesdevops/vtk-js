@@ -21,8 +21,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
   model.classHierarchy.push('vtkTrackedHandXRManipulator');
 
   let pickedActor;
-  let initialActorPosition; // position of the picked actor at the time if was picked in world coordinates
-  let initialPickControllerPosition; // space of the controller that picked the actor at the time it picked the actor
   let pickDevice; // id of the device/controller that did picking
 
   model.picker = vtkPicker.newInstance();
@@ -58,20 +56,11 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
   let rightOk = false;
 
   function convertQuatToWorld(q, physicalToWorldMatrix) {
-    // const axis = vec3.create();
-    // const angle = quat.getAxisAngle(axis, q);
-
-    // transform axis in world coordinate system
-    // const worldAxis = vec4.fromValues(...axis, 0.0);
-    // vec4.transformMat4(worldAxis, worldAxis, physicalToWorldMatrix);
-
     const matrix = mat4.fromQuat([], q);
     mat4.multiply(matrix, physicalToWorldMatrix, matrix);
     const rotation = mat3.fromMat4([], matrix);
 
     const outQ = quat.fromMat3([], rotation);
-
-    // const outQ = quat.setAxisAngle([], worldAxis, angle);
     return quat.normalize([], outQ);
   }
 
@@ -81,32 +70,21 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
     physicalOrientation,
     physicalToWorldMatrix
   ) {
+    const worldPosition = vec4.fromValues(...physicalPosition, 1.0);
+    vec4.transformMat4(worldPosition, worldPosition, physicalToWorldMatrix);
+
+    const lastWorldPosition = vec4.fromValues(
+      ...model.lastPhysicalPosition,
+      1.0
+    );
+    vec4.transformMat4(
+      lastWorldPosition,
+      lastWorldPosition,
+      physicalToWorldMatrix
+    );
+
     const translation = [];
-    vec3.subtract(translation, physicalPosition, model.lastPhysicalPosition);
-
-    // const lastPhysicalAngle = [];
-    // const orientationAngle = quat.getAxisAngle(
-    //   lastPhysicalAngle,
-    //   model.lastPhysicalOrientation
-    // );
-
-    // const q1 = quat.create();
-    // quat.setAxisAngle(q1, lastWorldOrientationAxis, lastWorldOrientationAngle);
-    // const quatPhysicalOrientation = quat.fromValues(...physicalOrientation);
-    // const worldOrientationAxis = vec3.fromValues(
-    //   model.lastWorldOrientation[0],
-    //   model.lastWorldOrientation[1],
-    //   model.lastWorldOrientation[2]
-    // );
-
-    // const worldOrientationAxis = [];
-    // const worldOrientationAngle = quat.getAxisAngle(
-    //   worldOrientationAxis,
-    //   worldOrientation
-    // );
-
-    // const q2 = quat.create();
-    // quat.setAxisAngle(q2, worldOrientationAxis, worldOrientationAngle);
+    vec3.subtract(translation, worldPosition, lastWorldPosition);
 
     const worldOrientation = convertQuatToWorld(
       physicalOrientation,
@@ -116,11 +94,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       model.lastPhysicalOrientation,
       physicalToWorldMatrix
     );
-
-    console.log({
-      worldOrientation: [...worldOrientation],
-      lastWorldOrientation: [...lastWorldOrientation],
-    });
 
     const lastWorldOrientationConjugated = quat.conjugate(
       [],
@@ -132,7 +105,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       worldOrientation,
       lastWorldOrientationConjugated
     );
-    console.log({ orientation });
 
     let worldAxis = [];
     let angle = quat.getAxisAngle(worldAxis, orientation);
@@ -143,120 +115,27 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       worldAxis = [0, 0, 1];
     }
 
-    const wxyz = [
-      vtkMath.degreesFromRadians(angle),
-      worldAxis[0],
-      worldAxis[1],
-      worldAxis[2],
-    ];
+    // const wxyz = [
+    //   vtkMath.degreesFromRadians(angle),
+    //   worldAxis[0],
+    //   worldAxis[1],
+    //   worldAxis[2],
+    // ];
+
     const transform = mat4.create();
-    mat4.translate(transform, transform, physicalPosition);
-
-    // mat4.rotate(transform, transform, angle, axis);
-    // mat4.rotateY(transform, transform, 0.15);
-
-    mat4.translate(transform, transform, vec3.negate([], physicalPosition));
+    mat4.translate(transform, transform, [
+      worldPosition[0],
+      worldPosition[1],
+      worldPosition[2],
+    ]);
+    mat4.rotate(transform, transform, angle, worldAxis);
+    mat4.translate(transform, transform, vec3.negate([], worldPosition));
     mat4.translate(transform, transform, translation);
-
-    mat4.multiply(transform, physicalToWorldMatrix, transform);
 
     const userMatrix = prop.getUserMatrix();
     mat4.multiply(transform, transform, userMatrix);
 
-    const m = transform;
-
-    // console.log({ transform });
-
-    const currentPropPosition = prop.getPosition();
-
-    const newPropPosition = vec3.create();
-
-    const worldTranslation = vec4.fromValues(...translation, 0.0);
-    vec4.transformMat4(
-      worldTranslation,
-      worldTranslation,
-      physicalToWorldMatrix
-    );
-
-    vec3.add(newPropPosition, currentPropPosition, worldTranslation);
-
-    // const newPose = vec3.subtract([], worldPosition, translation);
-
-    // console.log({ newPose });
-    // prop.setPosition(newPose);
-
-    // const degreeAngle = vtkMath.degreesFromRadians(angle);
-    // console.log({ degreeAngle, axis });
-
-    // if (Number.isNaN(degreeAngle)) {
-    //   console.log({
-    //     degreeAngle,
-    //     angle,
-    //     q2: [...q2],
-    //     worldOrientationAngle,
-    //     worldOrientationAxis: [...worldOrientationAxis],
-    //     lastWorldOrientationAngle,
-    //     lastWorldOrientationAxis: [...lastWorldOrientationAxis]
-    //   });
-    // }
-    // prop.rotateWXYZ(degreeAngle, ...axis);
-    prop.setPosition(newPropPosition);
-    console.log({ wxyz });
-    prop.rotateWXYZ(...wxyz);
-    // prop.setUserMatrix(m);
-  }
-
-  function getWorldOrientationQuaternionFromXRPoseMatrix(
-    physicalToWorldMatrix,
-    poseMatrix
-  ) {
-    const hvright = [poseMatrix[0], poseMatrix[1], poseMatrix[2]];
-    const hvup = [poseMatrix[4], poseMatrix[5], poseMatrix[6]];
-
-    console.log({ hvright, hvup });
-
-    // convert axes to world coordinates
-
-    vec3.transformMat4(hvright, hvright, physicalToWorldMatrix);
-    vec3.transformMat4(hvup, hvup, physicalToWorldMatrix);
-
-    const wdir = [];
-    vtkMath.cross(hvright, hvup, wdir);
-
-    const ortho = mat3.fromValues(
-      hvright[0],
-      hvup[0],
-      -wdir[0],
-      hvright[1],
-      hvup[1],
-      -wdir[1],
-      hvright[2],
-      hvup[2],
-      -wdir[2]
-    );
-
-    const wxyz = [];
-    quat.fromMat3(wxyz, ortho);
-
-    console.log({ ortho, wxyz });
-
-    const mag = Math.sqrt(
-      wxyz[1] * wxyz[1] + wxyz[2] * wxyz[2] + wxyz[3] * wxyz[3]
-    );
-
-    if (mag !== 0.0) {
-      wxyz[0] = 2.0 * vtkMath.degreesFromRadians(Math.atan2(mag, wxyz[0]));
-      wxyz[1] /= mag;
-      wxyz[2] /= mag;
-      wxyz[3] /= mag;
-    } else {
-      wxyz[0] = 0.0;
-      wxyz[1] = 0.0;
-      wxyz[2] = 0.0;
-      wxyz[3] = 1.0;
-    }
-
-    return wxyz;
+    prop.setUserMatrix(transform);
   }
 
   publicAPI.onButton3D = (interactorStyle, state, eventData) => {
@@ -299,18 +178,15 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       if (actors.length > 0) {
         actors[0].getProperty().setColor(0.0, 1.0, 0.0);
         pickedActor = actors[0];
-        initialActorPosition = pickedActor.getPosition();
-        initialPickControllerPosition = structuredClone(targetRayWorldPos);
         pickDevice = eventData.device;
         console.debug('picked something!');
       } else {
+        model.lastPhysicalOrientation = null;
+        model.lastPhysicalPosition = null;
         if (pickedActor) {
           pickedActor.getProperty().setColor(0.0, 0.0, 1.0);
-          pickedActor = undefined;
-          initialActorPosition = undefined;
-          initialPickControllerPosition = undefined;
-          pickDevice = undefined;
         }
+        pickedActor = null;
       }
     }
   };
@@ -414,7 +290,6 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
       }
 
       model.lastPhysicalOrientation = [...wxyz];
-      // model.lastWorldPosition = [...targetRayWorldPosition];
       model.lastPhysicalPosition = [...targetRayPosition];
     }
 
