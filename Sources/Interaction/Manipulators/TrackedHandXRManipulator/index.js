@@ -57,6 +57,24 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
   let leftOk = false;
   let rightOk = false;
 
+  function convertQuatToWorld(q, physicalToWorldMatrix) {
+    // const axis = vec3.create();
+    // const angle = quat.getAxisAngle(axis, q);
+
+    // transform axis in world coordinate system
+    // const worldAxis = vec4.fromValues(...axis, 0.0);
+    // vec4.transformMat4(worldAxis, worldAxis, physicalToWorldMatrix);
+
+    const matrix = mat4.fromQuat([], q);
+    mat4.multiply(matrix, physicalToWorldMatrix, matrix);
+    const rotation = mat3.fromMat4([], matrix);
+
+    const outQ = quat.fromMat3([], rotation);
+
+    // const outQ = quat.setAxisAngle([], worldAxis, angle);
+    return quat.normalize([], outQ);
+  }
+
   function positionProp(
     prop,
     physicalPosition,
@@ -74,11 +92,7 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
 
     // const q1 = quat.create();
     // quat.setAxisAngle(q1, lastWorldOrientationAxis, lastWorldOrientationAngle);
-    const quatPhysicalOrientation = quat.fromValues(...physicalOrientation);
-    const lastQuatPhysicalOrientation = quat.fromValues(
-      ...model.lastPhysicalOrientation
-    );
-
+    // const quatPhysicalOrientation = quat.fromValues(...physicalOrientation);
     // const worldOrientationAxis = vec3.fromValues(
     //   model.lastWorldOrientation[0],
     //   model.lastWorldOrientation[1],
@@ -94,23 +108,47 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
     // const q2 = quat.create();
     // quat.setAxisAngle(q2, worldOrientationAxis, worldOrientationAngle);
 
-    quat.conjugate(lastQuatPhysicalOrientation, lastQuatPhysicalOrientation);
-    // quat.multiply(q2, q2, q1);
-    const q = quat.multiply(
-      [],
-      lastQuatPhysicalOrientation,
-      quatPhysicalOrientation
+    const worldOrientation = convertQuatToWorld(
+      physicalOrientation,
+      physicalToWorldMatrix
+    );
+    const lastWorldOrientation = convertQuatToWorld(
+      model.lastPhysicalOrientation,
+      physicalToWorldMatrix
     );
 
-    const axis = vec3.create();
-    const angle = quat.getAxisAngle(axis, q);
+    console.log({
+      worldOrientation: [...worldOrientation],
+      lastWorldOrientation: [...lastWorldOrientation],
+    });
 
-    // transform axis in world coordinate syste
-    const worldAxis = vec4.fromValues(...axis, 0.0);
-    vec4.transformMat4(worldAxis, worldAxis, physicalToWorldMatrix);
+    const lastWorldOrientationConjugated = quat.conjugate(
+      [],
+      lastWorldOrientation
+    );
+    const orientation = [];
+    quat.multiply(
+      orientation,
+      worldOrientation,
+      lastWorldOrientationConjugated
+    );
+    console.log({ orientation });
 
-    const wxyz = [vtkMath.degreesFromRadians(angle), ...axis];
+    let worldAxis = [];
+    let angle = quat.getAxisAngle(worldAxis, orientation);
+    console.log({ angle, worldAxis });
 
+    if (Number.isNaN(angle)) {
+      angle = 0.0;
+      worldAxis = [0, 0, 1];
+    }
+
+    const wxyz = [
+      vtkMath.degreesFromRadians(angle),
+      worldAxis[0],
+      worldAxis[1],
+      worldAxis[2],
+    ];
     const transform = mat4.create();
     mat4.translate(transform, transform, physicalPosition);
 
@@ -162,8 +200,8 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
     //   });
     // }
     // prop.rotateWXYZ(degreeAngle, ...axis);
-    console.log({ newPropPosition });
     prop.setPosition(newPropPosition);
+    console.log({ wxyz });
     prop.rotateWXYZ(...wxyz);
     // prop.setUserMatrix(m);
   }
@@ -370,7 +408,7 @@ function vtkTrackedHandXRManipulator(publicAPI, model) {
         positionProp(
           pickedActor,
           targetRayPosition,
-          wxyz,
+          [...wxyz],
           physicalToWorldMatrix
         );
       }
