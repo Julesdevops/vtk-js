@@ -1,6 +1,6 @@
 import macro from 'vtk.js/Sources/macros';
 import vtkInteractorStyleManipulator from 'vtk.js/Sources/Interaction/Style/InteractorStyleManipulator';
-import vtkPicker from '@kitware/vtk.js/Rendering/Core/Picker';
+import vtkPicker from 'vtk.js/Sources/Rendering/Core/Picker';
 import vtk3DControllerModelSelectorManipulator from 'vtk.js/Sources/Interaction/Manipulators/3DControllerModelSelectorManipulator';
 
 import {

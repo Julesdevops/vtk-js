@@ -1,31 +1,31 @@
 // For streamlined VR development install the WebXR emulator extension
 // https://github.com/MozillaReality/WebXR-emulator-extension
 
-import '@kitware/vtk.js/favicon';
+import 'vtk.js/Sources/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import '@kitware/vtk.js/Rendering/Profiles/Geometry';
+import 'vtk.js/Sources/Rendering/Profiles/Geometry';
 
-import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
-// import vtkCalculator from '@kitware/vtk.js/Filters/General/Calculator';
-import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
-// import vtkSphereSource from '@kitware/vtk.js/Filters/Sources/SphereSource';
-import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
-import vtkWebXRRenderWindowHelper from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper';
-import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
-// import { AttributeTypes } from '@kitware/vtk.js/Common/DataModel/DataSetAttributes/Constants';
-// import { FieldDataTypes } from '@kitware/vtk.js/Common/DataModel/DataSet/Constants';
-import { XrSessionTypes } from '@kitware/vtk.js/Rendering/WebXR/RenderWindowHelper/Constants';
+import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
+// import vtkCalculator from 'vtk.js/Sources/Filters/General/Calculator';
+import vtkConeSource from 'vtk.js/Sources/Filters/Sources/ConeSource';
+// import vtkSphereSource from 'vtk.js/Sources/Filters/Sources/SphereSource';
+import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
+import vtkWebXRRenderWindowHelper from 'vtk.js/Sources/Rendering/WebXR/RenderWindowHelper';
+import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
+// import { AttributeTypes } from 'vtk.js/Sources/Common/DataModel/DataSetAttributes/Constants';
+// import { FieldDataTypes } from 'vtk.js/Sources/Common/DataModel/DataSet/Constants';
+import { XrSessionTypes } from 'vtk.js/Sources/Rendering/WebXR/RenderWindowHelper/Constants';
 
-import vtkInteractorStyleHMDXR from '@kitware/vtk.js/Interaction/Style/InteractorStyleHMDXR';
-import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
+import vtkInteractorStyleHMDXR from 'vtk.js/Sources/Interaction/Style/InteractorStyleHMDXR';
+import vtkRenderWindowInteractor from 'vtk.js/Sources/Rendering/Core/RenderWindowInteractor';
 
 // Force DataAccessHelper to have access to various data source
-import '@kitware/vtk.js/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
-import '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import '@kitware/vtk.js/IO/Core/DataAccessHelper/JSZipDataAccessHelper';
+import 'vtk.js/Sources/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
+import 'vtk.js/Sources/IO/Core/DataAccessHelper/HttpDataAccessHelper';
+import 'vtk.js/Sources/IO/Core/DataAccessHelper/JSZipDataAccessHelper';
 
-import vtkResourceLoader from '@kitware/vtk.js/IO/Core/ResourceLoader';
+import vtkResourceLoader from 'vtk.js/Sources/IO/Core/ResourceLoader';
 
 // Custom UI controls, including button to start XR session
 import controlPanel from './controller.html';
